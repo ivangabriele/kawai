@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { CornerDownLeft, Search, Zap } from 'lucide-react'
+// import { CornerDownLeft, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
@@ -8,7 +9,7 @@ import { tomorrowNight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 
 const DEBOUNCE_DELAY = 500
 const SYSTEM_PROMPT = `
-You are kawAI 🐰, an AI assistant integrated into a desktop command palette.
+You are kawAI, an AI assistant integrated into a desktop command palette.
 Your primary goal is to provide extremely concise, direct, and immediate answers to a developer's query.
 - If the user asks for a command or syntax, provide only that.
 - Be brief. No extra chatter, greetings, or explanations unless explicitly asked.
@@ -17,18 +18,23 @@ Your primary goal is to provide extremely concise, direct, and immediate answers
 - Example Response: "list.sort() or sorted()"
 `
 
-/**
- * Main application component for the kawAI command palette.
- */
 export default function App() {
   const [apiKey, setApiKey] = useState<string | undefined>(undefined)
   const [query, setQuery] = useState('')
-  const [answer, setAnswer] = useState('')
+  const [answer, setAnswer] = useState<string | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | undefined>(undefined)
 
   const inputRef = useRef<HTMLInputElement | null>(null)
   const debounceTimeoutRef = useRef<number | null>(null)
+
+  const clearInput = useCallback(() => {
+    if (!inputRef.current) {
+      return
+    }
+
+    setQuery('')
+  }, [])
 
   const fetchAnswer = useCallback(
     async (currentQuery: string) => {
@@ -39,15 +45,8 @@ export default function App() {
         return
       }
 
-      if (!currentQuery || currentQuery.trim().length < 3) {
-        setAnswer('')
-        setIsLoading(false)
-
-        return
-      }
-
       setIsLoading(true)
-      setError(null)
+      setError(undefined)
 
       const fullPrompt = `${SYSTEM_PROMPT}\n\nUser Query: "${currentQuery}"`
 
@@ -91,24 +90,46 @@ export default function App() {
     [apiKey],
   )
 
+  const hideWindow = useCallback(async () => {
+    try {
+      await invoke('hide_window')
+    } catch (err) {
+      console.error('Failed to hide window:', err)
+      setError('Failed to hide window. Please check the console.')
+    }
+  }, [])
+
+  const reset = useCallback(() => {
+    console.log('Resetting input and state...')
+    clearInput()
+    setAnswer(undefined)
+    setError(undefined)
+    setIsLoading(false)
+  }, [clearInput])
+
+  const retrieveApiKey = useCallback(async () => {
+    try {
+      const key = await invoke<string>('get_api_key')
+      setApiKey(key)
+    } catch (err) {
+      console.error('Failed to retrieve API key:', err)
+      setError('Failed to retrieve API key. Please check the console.')
+    }
+  }, [])
+
   useEffect(() => {
+    setError(undefined)
+
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current)
     }
 
-    if (query.trim() && query.trim().length >= 12) {
-      setIsLoading(true)
-
+    if (query.trim().length >= 12) {
       debounceTimeoutRef.current = setTimeout(() => {
         fetchAnswer(query)
       }, DEBOUNCE_DELAY)
-    } else {
-      setIsLoading(false)
-      setAnswer('')
-      setError(null)
     }
 
-    // Cleanup on unmount or if query changes
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current)
@@ -136,33 +157,15 @@ export default function App() {
     }
   }, [])
 
-  const retrieveApiKey = useCallback(async () => {
-    try {
-      const key = await invoke<string>('get_api_key')
-      setApiKey(key)
-    } catch (err) {
-      console.error('Failed to retrieve API key:', err)
-      setError('Failed to retrieve API key. Please check the console.')
-    }
-  }, [])
-
   useEffect(() => {
     retrieveApiKey()
   }, [retrieveApiKey])
-
-  const hideWindow = useCallback(async () => {
-    try {
-      await invoke('hide_window')
-    } catch (err) {
-      console.error('Failed to hide window:', err)
-      setError('Failed to hide window. Please check the console.')
-    }
-  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         console.log('Escape key pressed, hiding command palette...')
+        reset()
         hideWindow()
       }
     }
@@ -172,12 +175,12 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [hideWindow])
+  }, [hideWindow, reset])
 
   return (
     <div className="flex flex-col h-full w-full bg-[#313244] rounded-xl shadow-2xl border border-[#45475a] overflow-hidden">
       <div className="flex items-center p-4 border-b border-[#45475a]">
-        <Search className="w-5 h-5 text-[#89b4fa] mr-3" />
+        <img className="w-12 h-10 text-[#89b4fa] mr-3 text-4xl" src="/logo.svg" alt="kawAI Logo" />
         <input
           ref={inputRef}
           // biome-ignore lint/a11y/noAutofocus: This is a command palette, so it should focus automatically.
@@ -229,20 +232,14 @@ export default function App() {
             />
           </div>
         )}
-
-        {!isLoading && !answer && !error && (
-          <div className="text-[#6c7086] text-center">
-            <p>Your instant answer will appear here.</p>
-          </div>
-        )}
       </div>
 
       {/* Footer Hint */}
-      <div className="bg-[#181825] text-xs text-[#6c7086] px-4 py-2 flex justify-end items-center">
+      {/* <div className="bg-[#181825] text-xs text-[#6c7086] px-4 py-2 flex justify-end items-center">
         <span>Press</span>
         <CornerDownLeft className="w-3 h-3 mx-1.5" />
         <span>to submit</span>
-      </div>
+      </div> */}
     </div>
   )
 }

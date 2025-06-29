@@ -55,26 +55,48 @@ pub fn run() {
                 let monitor = window.current_monitor().unwrap().unwrap();
                 let screen_scale_factor = monitor.scale_factor();
                 let screen_physical_size = monitor.size();
-                let position = tauri::LogicalPosition {
-                    x: ((screen_physical_size.width as f64 / screen_scale_factor - 1280.0) / 2.0)
-                        as i32,
-                    y: ((screen_physical_size.height as f64 / screen_scale_factor - 360.0) / 2.0)
-                        as i32,
-                };
-                window
-                    .set_position(position)
-                    .expect("Could not set window position.");
 
+                #[cfg(not(debug_assertions))]
+                {
+                    let position = tauri::LogicalPosition {
+                        x: ((screen_physical_size.width as f64 / screen_scale_factor - 1280.0)
+                            / 2.0) as i32,
+                        y: ((screen_physical_size.height as f64 / screen_scale_factor - 360.0)
+                            / 2.0) as i32,
+                    };
+                    window
+                        .set_position(position)
+                        .expect("Could not set window position.");
+                }
                 #[cfg(debug_assertions)]
                 {
+                    use tauri::{LogicalPosition, LogicalSize};
+
+                    let position = LogicalPosition {
+                        x: ((screen_physical_size.width as f64 / screen_scale_factor - 1280.0)
+                            / 2.0) as i32,
+                        y: ((screen_physical_size.height as f64 / screen_scale_factor - 640.0)
+                            / 2.0) as i32,
+                    };
                     window
-                        .set_always_on_top(false)
-                        .expect("Could not set always on top.");
+                        .set_position(position)
+                        .expect("Could not set window position.");
+
                     window
-                        .get_webview_window(globals::MAIN_WINDOW_LABEL)
-                        .unwrap()
-                        .open_devtools();
+                        .set_size(LogicalSize {
+                            width: 1280.0,
+                            height: 640.0,
+                        })
+                        .expect("Could not set window size.");
+                    // window
+                    //     .set_always_on_top(false)
+                    //     .expect("Could not set always on top.");
+                    // window
+                    //     .get_webview_window(globals::MAIN_WINDOW_LABEL)
+                    //     .unwrap()
+                    //     .open_devtools();
                 }
+                // Not dev mode
             }
             Ok(())
         })
