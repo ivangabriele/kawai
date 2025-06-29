@@ -2,13 +2,12 @@
 
 Get instant LLM answers from a cross-OS command palette (<kbd>Super+Shift+P</kbd>).
 
-```txt
-(\___/) | > Who are you?
-(=^.^=) |
-(")_(") | I'm kawAI 🐰, a GUI chatbot giving answers before you're even done typing.
-```
 
-This project works but I just spent a few hours on it so I don't provide bundles yet.
+![Screenshot](docs/screenshot.png)
+
+
+> [!WARNING]  
+> This project works but I just spent a few hours on it so I don't provide bundles yet.
 
 ## Build from source
 
@@ -40,3 +39,11 @@ should automatically build bundles as well as a standalone executuable for your 
 
 - Use <kbd>Super+Shift+P</kbd> to open the command palette and start typing your query.
 - Press <kbd>Esc</kbd> to close the command palette.
+
+---
+
+```txt
+(\___/) | > Who are you?
+(=^.^=) |
+(")_(") | I'm kawAI 🐰, a GUI chatbot giving answers before you're even done typing.
+```
