@@ -1,0 +1,31 @@
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  display: flex;
+}
+
+code {
+  font-size: 12px;
+}
+
+#root {
+  flex-grow: 1;
+}
+
+.Answer {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.Answer * {
+  user-select: text;
+  -webkit-user-select: text;
+}
